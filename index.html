@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion Commerciale Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, #1f2937 0%, #374151 100%);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: #10b981;
+        }
+        
+        .notification.error {
+            background: #ef4444;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .stats-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .chart-container {
+            height: 300px;
+            width: 100%;
+        }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .input-group label {
+            position: absolute;
+            top: -8px;
+            left: 12px;
+            background: white;
+            padding: 0 4px;
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        tr:hover {
+            background-color: #f9fafb;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge.warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+    
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Gestion Commerciale Pro</h1>
+                <p class="text-gray-600">Système de gestion d'entreprise</p>
+            </div>
+            
+            <div id="loginForm">
+                <div class="input-group">
+                    <input type="text" id="loginUsername" required>
+                    <label>Nom d'utilisateur</label>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="loginPassword" required>
+                    <label>Mot de passe</label>
+                </div>
+                
+                <button onclick="login()" class="btn-primary w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity mb-4">
+                    Se connecter
+                </button>
+                
+                <div class="text-center space-y-2">
+                    <button onclick="showCreateAccount()" class="text-blue-600 hover:text-blue-800 text-sm">
+                        Créer un nouveau compte
+                    </button>
+                    <br>
+                    <button onclick="showForgotPassword()" class="text-gray-600 hover:text-gray-800 text-sm">
+                        Mot de passe oublié ?
+                    </button>
+                </div>
+            </div>
+            
+            <div id="createAccountForm" class="hidden">
+                <div class="text-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Créer un nouveau compte</h2>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="newUsername" required>
+                    <label>Nom d'utilisateur</label>
+                </div>
+                
+                <div class="input-group">
+                    <input type="email" id="newEmail" required>
+                    <label>Email</label>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="newPassword" required>
+                    <label>Mot de passe</label>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="confirmPassword" required>
+                    <label>Confirmer le mot de passe</label>
+                </div>
+                
+                <div class="input-group">
+                    <select id="newRole" required>
+                        <option value="">Sélectionner un rôle</option>
+                        <option value="saisie">Département Saisie</option>
+                        <option value="directeur">Directeur</option>
+                        <option value="admin">Administrateur</option>
+                    </select>
+                    <label>Rôle</label>
+                </div>
+                
+                <button onclick="requestAccountCreation()" class="btn-primary w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity mb-4">
+                    Demander la création
+                </button>
+                
+                <button onclick="showLogin()" class="w-full text-gray-600 py-2 rounded-lg hover:bg-gray-100">
+                    Retour à la connexion
+                </button>
+            </div>
+            
+            <div id="validateCodeForm" class="hidden">
+                <div class="text-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Validation du compte</h2>
+                    <p class="text-gray-600 mt-2">Demandez le code de validation à l'administrateur</p>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="validationCode" maxlength="4" required>
+                    <label>Code de validation</label>
+                </div>
+                
+                <div class="text-center mb-4">
+                    <p class="text-sm text-gray-600">Tentatives restantes: <span id="attemptsLeft">3</span></p>
+                </div>
+                
+                <button onclick="validateAccount()" class="btn-primary w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity mb-4">
+                    Valider le compte
+                </button>
+                
+                <button onclick="showLogin()" class="w-full text-gray-600 py-2 rounded-lg hover:bg-gray-100">
+                    Annuler
+                </button>
+            </div>
+            
+            <div id="forgotPasswordForm" class="hidden">
+                <div class="text-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Mot de passe oublié</h2>
+                    <p class="text-gray-600 mt-2">Contactez l'administrateur pour récupérer votre mot de passe</p>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="forgotUsername" required>
+                    <label>Nom d'utilisateur</label>
+                </div>
+                
+                <button onclick="sendPasswordReset()" class="btn-primary w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity mb-4">
+                    Demander la récupération
+                </button>
+                
+                <button onclick="showLogin()" class="w-full text-gray-600 py-2 rounded-lg hover:bg-gray-100">
+                    Retour à la connexion
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 z-50 text-white">
+            <div class="p-6">
+                <h1 class="text-xl font-bold mb-8">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Gestion Pro
+                </h1>
+                
+                <nav class="space-y-2" id="navigation">
+                    <!-- Navigation items will be dynamically added based on user role -->
+                </nav>
+                
+                <div class="mt-8 pt-8 border-t border-gray-600">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-user-circle text-2xl mr-3"></i>
+                        <div>
+                            <div class="font-medium" id="userDisplayName"></div>
+                            <div class="text-sm text-gray-300" id="userRole"></div>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        Déconnexion
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content ml-64 p-6">
+            <!-- Header -->
+            <header class="bg-white rounded-lg shadow-sm mb-6 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 id="pageTitle" class="text-2xl font-bold text-gray-800">Dashboard</h2>
+                        <p class="text-gray-600">Bienvenue dans votre système de gestion</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="exportData()" class="btn-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-download mr-2"></i>
+                            Exporter
+                        </button>
+                        <button onclick="importData()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                            <i class="fas fa-upload mr-2"></i>
+                            Importer
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="section">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="stats-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div id="totalSales" class="stats-value">0 DH</div>
+                                <div class="text-gray-600">Ventes du mois</div>
+                            </div>
+                            <i class="fas fa-euro-sign text-3xl text-blue-500"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div id="totalProfit" class="stats-value">0 DH</div>
+                                <div class="text-gray-600">Bénéfice total</div>
+                            </div>
+                            <i class="fas fa-chart-line text-3xl text-green-500"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div id="totalClients" class="stats-value">0</div>
+                                <div class="text-gray-600">Clients actifs</div>
+                            </div>
+                            <i class="fas fa-users text-3xl text-purple-500"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div id="totalCharges" class="stats-value">0 DH</div>
+                                <div class="text-gray-600">Charges totales</div>
+                            </div>
+                            <i class="fas fa-receipt text-3xl text-orange-500"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-semibold mb-4">Évolution des ventes</h3>
+                        <div class="chart-container">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-semibold mb-4">Répartition des charges</h3>
+                        <div class="chart-container">
+                            <canvas id="chargesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Products Section -->
+            <div id="products" class="section hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">Gestion des produits</h3>
+                        <button onclick="showModal('productModal')" class="btn-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter un produit
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table id="productsTable">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Prix d'achat</th>
+                                    <th>Prix de vente</th>
+                                    <th>Marge</th>
+                                    <th>Stock</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Clients Section -->
+            <div id="clients" class="section hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">Gestion des clients</h3>
+                        <button onclick="showModal('clientModal')" class="btn-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter un client
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table id="clientsTable">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Email</th>
+                                    <th>Téléphone</th>
+                                    <th>CA Total</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sales Section -->
+            <div id="sales" class="section hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">Gestion des ventes</h3>
+                        <button onclick="showModal('saleModal')" class="btn-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-plus mr-2"></i>
+                            Nouvelle vente
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table id="salesTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Client</th>
+                                    <th>Produit</th>
+                                    <th>Quantité</th>
+                                    <th>Prix unitaire</th>
+                                    <th>Total</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Suppliers Section -->
+            <div id="suppliers" class="section hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">Gestion des fournisseurs</h3>
+                        <button onclick="showModal('supplierModal')" class="btn-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter un fournisseur
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table id="suppliersTable">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Email</th>
+                                    <th>Téléphone</th>
+                                    <th>Dette actuelle</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suppliersTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Inventory Section -->
+            <div id="inventory" class="section hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">Gestion d'inventaire</h3>
+                        <button onclick="showModal('inventoryModal')" class="btn-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-plus mr-2"></i>
+                            Mouvement de stock
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="stats-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div id="totalStockValue" class="stats-value">0 DH</div>
+                                    <div class="text-gray-600">Valeur du stock</div>
+                                </div>
+                                <i class="fas fa-warehouse text-3xl text-indigo-500"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div id="totalProducts" class="stats-value">0</div>
+                                    <div class="text-gray-600">Produits en stock</div>
+                                </div>
+                                <i class="fas fa-boxes text-3xl text-green-500"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div id="alertsCount" class="stats-value">0</div>
+                                    <div class="text-gray-600">Alertes stock</div>
+                                </div>
+                                <i class="fas fa-exclamation-circle text-3xl text-red-500"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table id="inventoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th>Stock actuel</th>
+                                    <th>Stock minimum</th>
+                                    <th>Valeur unitaire</th>
+                                    <th>Valeur totale</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charges Section -->
+            <div id="charges" class="section hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold">Gestion des charges</h3>
+                        <button onclick="showModal('chargeModal')" class="btn-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter une charge
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="stats-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div id="totalFixedCharges" class="stats-value">0 DH</div>
+                                    <div class="text-gray-600">Charges fixes</div>
+                                </div>
+                                <i class="fas fa-home text-3xl text-blue-500"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div id="totalVariableCharges" class="stats-value">0 DH</div>
+                                    <div class="text-gray-600">Charges variables</div>
+                                </div>
+                                <i class="fas fa-bolt text-3xl text-yellow-500"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table id="chargesTable">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th>Montant</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chargesTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reports Section -->
+            <div id="reports" class="section hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold mb-6">Rapports et analyses</h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold mb-4">Analyse des ventes</h4>
+                            <div class="chart-container">
+                                <canvas id="salesAnalysisChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold mb-4">Répartition des bénéfices</h4>
+                            <div class="chart-container">
+                                <canvas id="profitChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Ajouter/Modifier un produit</h3>
+                <button onclick="hideModal('productModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="productForm" onsubmit="saveProduct(event)">
+                <input type="hidden" id="productId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <input type="text" id="productName" required>
+                        <label>Nom du produit</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="productCategory">
+                        <label>Catégorie</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="productCostPrice" step="0.01" required>
+                        <label>Prix d'achat (DH)</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="productSellPrice" step="0.01" required>
+                        <label>Prix de vente (DH)</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="productStock" required>
+                        <label>Stock initial</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="productMinStock">
+                        <label>Stock minimum</label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideModal('productModal')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn-primary px-4 py-2 text-white rounded-lg hover:opacity-90">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Client Modal -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Ajouter/Modifier un client</h3>
+                <button onclick="hideModal('clientModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="clientForm" onsubmit="saveClient(event)">
+                <input type="hidden" id="clientId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <input type="text" id="clientName" required>
+                        <label>Nom du client</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="email" id="clientEmail" required>
+                        <label>Email</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="tel" id="clientPhone" required>
+                        <label>Téléphone</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="clientAddress">
+                        <label>Adresse</label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideModal('clientModal')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn-primary px-4 py-2 text-white rounded-lg hover:opacity-90">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Sale Modal -->
+    <div id="saleModal" class="modal">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Nouvelle vente</h3>
+                <button onclick="hideModal('saleModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="saleForm" onsubmit="saveSale(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <select id="saleClient" required>
+                            <option value="">Sélectionner un client</option>
+                        </select>
+                        <label>Client</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <select id="saleProduct" required onchange="updateSalePrice()">
+                            <option value="">Sélectionner un produit</option>
+                        </select>
+                        <label>Produit</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="saleQuantity" required onchange="updateSaleTotal()">
+                        <label>Quantité</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="saleUnitPrice" step="0.01" required onchange="updateSaleTotal()">
+                        <label>Prix unitaire (DH)</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="saleTotal" readonly>
+                        <label>Total (DH)</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="date" id="saleDate" required>
+                        <label>Date de vente</label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideModal('saleModal')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn-primary px-4 py-2 text-white rounded-lg hover:opacity-90">
+                        Enregistrer vente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Supplier Modal -->
+    <div id="supplierModal" class="modal">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Ajouter/Modifier un fournisseur</h3>
+                <button onclick="hideModal('supplierModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="supplierForm" onsubmit="saveSupplier(event)">
+                <input type="hidden" id="supplierId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <input type="text" id="supplierName" required>
+                        <label>Nom du fournisseur</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="email" id="supplierEmail" required>
+                        <label>Email</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="tel" id="supplierPhone" required>
+                        <label>Téléphone</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="supplierAddress">
+                        <label>Adresse</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="supplierDebt" step="0.01">
+                        <label>Dette actuelle (DH)</label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideModal('supplierModal')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn-primary px-4 py-2 text-white rounded-lg hover:opacity-90">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Inventory Modal -->
+    <div id="inventoryModal" class="modal">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Mouvement de stock</h3>
+                <button onclick="hideModal('inventoryModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="inventoryForm" onsubmit="saveInventoryMovement(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <select id="inventoryProduct" required>
+                            <option value="">Sélectionner un produit</option>
+                        </select>
+                        <label>Produit</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <select id="inventoryType" required>
+                            <option value="">Type de mouvement</option>
+                            <option value="in">Entrée</option>
+                            <option value="out">Sortie</option>
+                        </select>
+                        <label>Type</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="inventoryQuantity" required>
+                        <label>Quantité</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="date" id="inventoryDate" required>
+                        <label>Date</label>
+                    </div>
+                    
+                    <div class="input-group md:col-span-2">
+                        <input type="text" id="inventoryNote">
+                        <label>Note (optionnel)</label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideModal('inventoryModal')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn-primary px-4 py-2 text-white rounded-lg hover:opacity-90">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Charge Modal -->
+    <div id="chargeModal" class="modal">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Ajouter/Modifier une charge</h3>
+                <button onclick="hideModal('chargeModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="chargeForm" onsubmit="saveCharge(event)">
+                <input type="hidden" id="chargeId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <input type="text" id="chargeDescription" required>
+                        <label>Description</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <select id="chargeType" required>
+                            <option value="">Type de charge</option>
+                            <option value="fixe">Charge fixe</option>
+                            <option value="variable">Charge variable</option>
+                        </select>
+                        <label>Type</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="number" id="chargeAmount" step="0.01" required>
+                        <label>Montant (DH)</label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="date" id="chargeDate" required>
+                        <label>Date</label>
+                    </div>
+                    
+                    <div class="input-group md:col-span-2">
+                        <input type="text" id="chargeNote">
+                        <label>Note (optionnel)</label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideModal('chargeModal')" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn-primary px-4 py-2 text-white rounded-lg hover:opacity-90">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Application State
+        let currentUser = null;
+        let currentSection = 'dashboard';
+        let pendingAccount = null;
+        let validationAttempts = 3;
+        
+        // Default users
+        const defaultUsers = [
+            { username: 'SOUFIANE', password: 'Soufiane2025', role: 'directeur', email: 'soufiane@company.com' },
+            { username: 'saisie', password: 'saisie2024', role: 'saisie', email: 'saisie@company.com' },
+            { username: 'admin', password: 'admin2024', role: 'admin', email: 'admin@company.com' }
+        ];
+        
+        // Data Management
+        class DataManager {
+            constructor() {
+                this.initializeData();
+            }
+            
+            initializeData() {
+                if (!localStorage.getItem('users')) {
+                    localStorage.setItem('users', JSON.stringify(defaultUsers));
+                }
+                
+                if (!localStorage.getItem('products')) {
+                    const defaultProducts = [
+                        { id: 1, name: 'Ordinateur portable', category: 'Informatique', costPrice: 8000, sellPrice: 12000, stock: 10, minStock: 2 },
+                        { id: 2, name: 'Smartphone', category: 'Téléphonie', costPrice: 3000, sellPrice: 4500, stock: 25, minStock: 5 },
+                        { id: 3, name: 'Tablette', category: 'Informatique', costPrice: 2000, sellPrice: 2800, stock: 15, minStock: 3 }
+                    ];
+                    localStorage.setItem('products', JSON.stringify(defaultProducts));
+                }
+                
+                if (!localStorage.getItem('clients')) {
+                    const defaultClients = [
+                        { id: 1, name: 'Mohammed Alami', email: 'mohammed@email.com', phone: '0661234567', address: 'Casablanca' },
+                        { id: 2, name: 'Fatima Benali', email: 'fatima@email.com', phone: '0662345678', address: 'Rabat' },
+                        { id: 3, name: 'Ahmed Tazi', email: 'ahmed@email.com', phone: '0663456789', address: 'Fès' }
+                    ];
+                    localStorage.setItem('clients', JSON.stringify(defaultClients));
+                }
+                
+                if (!localStorage.getItem('suppliers')) {
+                    const defaultSuppliers = [
+                        { id: 1, name: 'TechnoPlus SARL', email: 'contact@technoplus.ma', phone: '0522123456', address: 'Casablanca', debt: 25000 },
+                        { id: 2, name: 'Digital Solutions', email: 'info@digitalsol.ma', phone: '0537234567', address: 'Rabat', debt: 15000 }
+                    ];
+                    localStorage.setItem('suppliers', JSON.stringify(defaultSuppliers));
+                }
+                
+                if (!localStorage.getItem('sales')) {
+                    const defaultSales = [
+                        { id: 1, clientId: 1, productId: 1, quantity: 2, unitPrice: 12000, total: 24000, date: '2024-01-15' },
+                        { id: 2, clientId: 2, productId: 2, quantity: 3, unitPrice: 4500, total: 13500, date: '2024-01-16' }
+                    ];
+                    localStorage.setItem('sales', JSON.stringify(defaultSales));
+                }
+                
+                if (!localStorage.getItem('charges')) {
+                    const defaultCharges = [
+                        { id: 1, description: 'Loyer bureau', type: 'fixe', amount: 8000, date: '2024-01-01' },
+                        { id: 2, description: 'Électricité', type: 'variable', amount: 1200, date: '2024-01-15' },
+                        { id: 3, description: 'Salaire employé', type: 'fixe', amount: 6000, date: '2024-01-01' }
+                    ];
+                    localStorage.setItem('charges', JSON.stringify(defaultCharges));
+                }
+            }
+            
+            getData(key) {
+                return JSON.parse(localStorage.getItem(key) || '[]');
+            }
+            
+            saveData(key, data) {
+                localStorage.setItem(key, JSON.stringify(data));
+            }
+            
+            addItem(key, item) {
+                const data = this.getData(key);
+                item.id = Date.now();
+                data.push(item);
+                this.saveData(key, data);
+                return item;
+            }
+            
+            updateItem(key, id, updates) {
+                const data = this.getData(key);
+                const index = data.findIndex(item => item.id === id);
+                if (index !== -1) {
+                    data[index] = { ...data[index], ...updates };
+                    this.saveData(key, data);
+                    return data[index];
+                }
+                return null;
+            }
+            
+            deleteItem(key, id) {
+                const data = this.getData(key);
+                const filtered = data.filter(item => item.id !== id);
+                this.saveData(key, filtered);
+                return filtered;
+            }
+        }
+        
+        const dataManager = new DataManager();
+        
+        // Authentication functions
+        function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                showNotification('Veuillez saisir tous les champs', 'error');
+                return;
+            }
+            
+            const users = dataManager.getData('users');
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                showMainApp();
+                showNotification('Connexion réussie', 'success');
+            } else {
+                showNotification('Identifiants incorrects', 'error');
+            }
+        }
+        
+        function showCreateAccount() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('createAccountForm').classList.remove('hidden');
+        }
+        
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('createAccountForm').classList.add('hidden');
+            document.getElementById('validateCodeForm').classList.add('hidden');
+            document.getElementById('forgotPasswordForm').classList.add('hidden');
+        }
+        
+        function showForgotPassword() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('forgotPasswordForm').classList.remove('hidden');
+        }
+        
+        function requestAccountCreation() {
+            const username = document.getElementById('newUsername').value;
+            const email = document.getElementById('newEmail').value;
+            const password = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const role = document.getElementById('newRole').value;
+            
+            if (!username || !email || !password || !confirmPassword || !role) {
+                showNotification('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showNotification('Les mots de passe ne correspondent pas', 'error');
+                return;
+            }
+            
+            const users = dataManager.getData('users');
+            if (users.find(u => u.username === username)) {
+                showNotification('Ce nom d\'utilisateur existe déjà', 'error');
+                return;
+            }
+            
+            pendingAccount = { username, email, password, role };
+            validationAttempts = 3;
+            
+            document.getElementById('createAccountForm').classList.add('hidden');
+            document.getElementById('validateCodeForm').classList.remove('hidden');
+            document.getElementById('attemptsLeft').textContent = validationAttempts;
+            
+            showNotification('Demande de création envoyée. Demandez le code de validation à l\'administrateur.', 'success');
+        }
+        
+        function validateAccount() {
+            const code = document.getElementById('validationCode').value;
+            
+            if (!code) {
+                showNotification('Veuillez saisir le code de validation', 'error');
+                return;
+            }
+            
+            if (code === '2001') {
+                // Create the account
+                const users = dataManager.getData('users');
+                users.push(pendingAccount);
+                dataManager.saveData('users', users);
+                
+                showNotification('Compte créé avec succès ! Vous pouvez maintenant vous connecter.', 'success');
+                
+                // Reset form
+                document.getElementById('validateCodeForm').classList.add('hidden');
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('validationCode').value = '';
+                document.getElementById('createAccountForm').reset();
+                
+                pendingAccount = null;
+                validationAttempts = 3;
+            } else {
+                validationAttempts--;
+                document.getElementById('attemptsLeft').textContent = validationAttempts;
+                
+                if (validationAttempts <= 0) {
+                    showNotification('Trop de tentatives. Veuillez recommencer plus tard.', 'error');
+                    showLogin();
+                    validationAttempts = 3;
+                } else {
+                    showNotification('Code de validation incorrect. Tentatives restantes: ' + validationAttempts, 'error');
+                }
+            }
+        }
+        
+        function sendPasswordReset() {
+            const username = document.getElementById('forgotUsername').value;
+            
+            if (!username) {
+                showNotification('Veuillez saisir votre nom d\'utilisateur', 'error');
+                return;
+            }
+            
+            const users = dataManager.getData('users');
+            const user = users.find(u => u.username === username);
+            
+            if (user) {
+                showNotification('Demande de récupération envoyée. Contactez l\'administrateur.', 'success');
+                showLogin();
+            } else {
+                showNotification('Nom d\'utilisateur non trouvé', 'error');
+            }
+        }
+        
+        function logout() {
+            currentUser = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            showNotification('Déconnexion réussie', 'success');
+        }
+        
+        function showMainApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Update user info
+            document.getElementById('userDisplayName').textContent = currentUser.username;
+            document.getElementById('userRole').textContent = getRoleDisplayName(currentUser.role);
+            
+            // Setup navigation based on role
+            setupNavigation();
+            
+            // Load dashboard
+            showSection('dashboard');
+        }
+        
+        function getRoleDisplayName(role) {
+            const roles = {
+                'directeur': 'Directeur',
+                'saisie': 'Département Saisie',
+                'admin': 'Administrateur'
+            };
+            return roles[role] || role;
+        }
+        
+        function setupNavigation() {
+            const navigation = document.getElementById('navigation');
+            navigation.innerHTML = '';
+            
+            const allSections = [
+                { id: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard', roles: ['directeur', 'admin'] },
+                { id: 'products', icon: 'fas fa-box', label: 'Produits', roles: ['directeur', 'admin'] },
+                { id: 'clients', icon: 'fas fa-users', label: 'Clients', roles: ['directeur', 'admin'] },
+                { id: 'sales', icon: 'fas fa-shopping-cart', label: 'Ventes', roles: ['directeur', 'saisie', 'admin'] },
+                { id: 'suppliers', icon: 'fas fa-truck', label: 'Fournisseurs', roles: ['directeur', 'saisie', 'admin'] },
+                { id: 'inventory', icon: 'fas fa-warehouse', label: 'Inventaire', roles: ['directeur', 'admin'] },
+                { id: 'charges', icon: 'fas fa-receipt', label: 'Charges', roles: ['directeur', 'admin'] },
+                { id: 'reports', icon: 'fas fa-chart-bar', label: 'Rapports', roles: ['directeur', 'admin'] }
+            ];
+            
+            allSections.forEach(section => {
+                if (section.roles.includes(currentUser.role)) {
+                    const navItem = document.createElement('a');
+                    navItem.href = '#';
+                    navItem.className = 'nav-link block py-3 px-4 rounded-lg hover:bg-gray-600 transition-colors';
+                    navItem.innerHTML = `<i class="${section.icon} mr-3"></i>${section.label}`;
+                    navItem.onclick = () => showSection(section.id);
+                    navigation.appendChild(navItem);
+                }
+            });
+        }
+        
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            // Update page title
+            const titles = {
+                dashboard: 'Dashboard',
+                products: 'Produits',
+                clients: 'Clients',
+                sales: 'Ventes',
+                suppliers: 'Fournisseurs',
+                inventory: 'Inventaire',
+                charges: 'Charges',
+                reports: 'Rapports'
+            };
+            document.getElementById('pageTitle').textContent = titles[sectionId];
+            
+            // Update navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('bg-gray-600');
+            });
+            event.target.classList.add('bg-gray-600');
+            
+            // Load section data
+            switch(sectionId) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'products':
+                    loadProducts();
+                    break;
+                case 'clients':
+                    loadClients();
+                    break;
+                case 'sales':
+                    loadSales();
+                    break;
+                case 'suppliers':
+                    loadSuppliers();
+                    break;
+                case 'inventory':
+                    loadInventory();
+                    break;
+                case 'charges':
+                    loadCharges();
+                    break;
+                case 'reports':
+                    loadReports();
+                    break;
+            }
+            
+            currentSection = sectionId;
+        }
+        
+        // Dashboard functions
+        function loadDashboard() {
+            updateDashboardStats();
+            loadDashboardCharts();
+        }
+        
+        function updateDashboardStats() {
+            const sales = dataManager.getData('sales');
+            const charges = dataManager.getData('charges');
+            const clients = dataManager.getData('clients');
+            
+            const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
+            const totalCharges = charges.reduce((sum, charge) => sum + charge.amount, 0);
+            const totalProfit = totalSales - totalCharges;
+            
+            document.getElementById('totalSales').textContent = formatCurrency(totalSales);
+            document.getElementById('totalProfit').textContent = formatCurrency(totalProfit);
+            document.getElementById('totalClients').textContent = clients.length;
+            document.getElementById('totalCharges').textContent = formatCurrency(totalCharges);
+        }
+        
+        function loadDashboardCharts() {
+            // Sales chart
+            const salesChart = document.getElementById('salesChart');
+            if (salesChart) {
+                const ctx = salesChart.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+                        datasets: [{
+                            label: 'Ventes (DH)',
+                            data: [120000, 190000, 300000, 250000, 220000, 300000],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Charges chart
+            const chargesChart = document.getElementById('chargesChart');
+            if (chargesChart) {
+                const ctx = chargesChart.getContext('2d');
+                const charges = dataManager.getData('charges');
+                const fixedCharges = charges.filter(c => c.type === 'fixe').reduce((sum, c) => sum + c.amount, 0);
+                const variableCharges = charges.filter(c => c.type === 'variable').reduce((sum, c) => sum + c.amount, 0);
+                
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Charges fixes', 'Charges variables'],
+                        datasets: [{
+                            data: [fixedCharges, variableCharges],
+                            backgroundColor: ['#667eea', '#f59e0b']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Products functions
+        function loadProducts() {
+            const products = dataManager.getData('products');
+            const tbody = document.getElementById('productsTableBody');
+            tbody.innerHTML = '';
+            
+            products.forEach(product => {
+                const margin = product.sellPrice - product.costPrice;
+                const marginPercent = ((margin / product.costPrice) * 100).toFixed(1);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>${formatCurrency(product.costPrice)}</td>
+                    <td>${formatCurrency(product.sellPrice)}</td>
+                    <td>${formatCurrency(margin)} (${marginPercent}%)</td>
+                    <td>${product.stock}</td>
+                    <td>
+                        <button onclick="editProduct(${product.id})" class="bg-blue-500 text-white px-3 py-1 rounded text-sm mr-2">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteProduct(${product.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function saveProduct(event) {
+            event.preventDefault();
+            
+            const product = {
+                name: document.getElementById('productName').value,
+                category: document.getElementById('productCategory').value,
+                costPrice: parseFloat(document.getElementById('productCostPrice').value),
+                sellPrice: parseFloat(document.getElementById('productSellPrice').value),
+                stock: parseInt(document.getElementById('productStock').value),
+                minStock: parseInt(document.getElementById('productMinStock').value) || 0
+            };
+            
+            const id = document.getElementById('productId').value;
+            if (id) {
+                dataManager.updateItem('products', parseInt(id), product);
+                showNotification('Produit modifié avec succès', 'success');
+            } else {
+                dataManager.addItem('products', product);
+                showNotification('Produit ajouté avec succès', 'success');
+            }
+            
+            hideModal('productModal');
+            loadProducts();
+        }
+        
+        function editProduct(id) {
+            const products = dataManager.getData('products');
+            const product = products.find(p => p.id === id);
+            
+            if (product) {
+                document.getElementById('productId').value = product.id;
+                document.getElementById('productName').value = product.name;
+                document.getElementById('productCategory').value = product.category;
+                document.getElementById('productCostPrice').value = product.costPrice;
+                document.getElementById('productSellPrice').value = product.sellPrice;
+                document.getElementById('productStock').value = product.stock;
+                document.getElementById('productMinStock').value = product.minStock;
+                
+                showModal('productModal');
+            }
+        }
+        
+        function deleteProduct(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
+                dataManager.deleteItem('products', id);
+                showNotification('Produit supprimé avec succès', 'success');
+                loadProducts();
+            }
+        }
+        
+        // Clients functions
+        function loadClients() {
+            const clients = dataManager.getData('clients');
+            const sales = dataManager.getData('sales');
+            const tbody = document.getElementById('clientsTableBody');
+            tbody.innerHTML = '';
+            
+            clients.forEach(client => {
+                const clientSales = sales.filter(s => s.clientId === client.id);
+                const totalCA = clientSales.reduce((sum, s) => sum + s.total, 0);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${client.name}</td>
+                    <td>${client.email}</td>
+                    <td>${client.phone}</td>
+                    <td>${formatCurrency(totalCA)}</td>
+                    <td>
+                        <button onclick="editClient(${client.id})" class="bg-blue-500 text-white px-3 py-1 rounded text-sm mr-2">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteClient(${client.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function saveClient(event) {
+            event.preventDefault();
+            
+            const client = {
+                name: document.getElementById('clientName').value,
+                email: document.getElementById('clientEmail').value,
+                phone: document.getElementById('clientPhone').value,
+                address: document.getElementById('clientAddress').value
+            };
+            
+            const id = document.getElementById('clientId').value;
+            if (id) {
+                dataManager.updateItem('clients', parseInt(id), client);
+                showNotification('Client modifié avec succès', 'success');
+            } else {
+                dataManager.addItem('clients', client);
+                showNotification('Client ajouté avec succès', 'success');
+            }
+            
+            hideModal('clientModal');
+            loadClients();
+        }
+        
+        function editClient(id) {
+            const clients = dataManager.getData('clients');
+            const client = clients.find(c => c.id === id);
+            
+            if (client) {
+                document.getElementById('clientId').value = client.id;
+                document.getElementById('clientName').value = client.name;
+                document.getElementById('clientEmail').value = client.email;
+                document.getElementById('clientPhone').value = client.phone;
+                document.getElementById('clientAddress').value = client.address;
+                
+                showModal('clientModal');
+            }
+        }
+        
+        function deleteClient(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
+                dataManager.deleteItem('clients', id);
+                showNotification('Client supprimé avec succès', 'success');
+                loadClients();
+            }
+        }
+        
+        // Sales functions
+        function loadSales() {
+            const sales = dataManager.getData('sales');
+            const clients = dataManager.getData('clients');
+            const products = dataManager.getData('products');
+            const tbody = document.getElementById('salesTableBody');
+            tbody.innerHTML = '';
+            
+            sales.forEach(sale => {
+                const client = clients.find(c => c.id === sale.clientId);
+                const product = products.find(p => p.id === sale.productId);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sale.date}</td>
+                    <td>${client ? client.name : 'N/A'}</td>
+                    <td>${product ? product.name : 'N/A'}</td>
+                    <td>${sale.quantity}</td>
+                    <td>${formatCurrency(sale.unitPrice)}</td>
+                    <td>${formatCurrency(sale.total)}</td>
+                    <td>
+                        <button onclick="deleteSale(${sale.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Populate client and product dropdowns
+            populateSaleDropdowns();
+        }
+        
+        function populateSaleDropdowns() {
+            const clients = dataManager.getData('clients');
+            const products = dataManager.getData('products');
+            
+            const clientSelect = document.getElementById('saleClient');
+            const productSelect = document.getElementById('saleProduct');
+            
+            clientSelect.innerHTML = '<option value="">Sélectionner un client</option>';
+            productSelect.innerHTML = '<option value="">Sélectionner un produit</option>';
+            
+            clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.name;
+                clientSelect.appendChild(option);
+            });
+            
+            products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = product.name;
+                productSelect.appendChild(option);
+            });
+        }
+        
+        function updateSalePrice() {
+            const productId = document.getElementById('saleProduct').value;
+            if (productId) {
+                const products = dataManager.getData('products');
+                const product = products.find(p => p.id === parseInt(productId));
+                if (product) {
+                    document.getElementById('saleUnitPrice').value = product.sellPrice;
+                    updateSaleTotal();
+                }
+            }
+        }
+        
+        function updateSaleTotal() {
+            const quantity = parseFloat(document.getElementById('saleQuantity').value) || 0;
+            const unitPrice = parseFloat(document.getElementById('saleUnitPrice').value) || 0;
+            const total = quantity * unitPrice;
+            document.getElementById('saleTotal').value = total;
+        }
+        
+        function saveSale(event) {
+            event.preventDefault();
+            
+            const sale = {
+                clientId: parseInt(document.getElementById('saleClient').value),
+                productId: parseInt(document.getElementById('saleProduct').value),
+                quantity: parseInt(document.getElementById('saleQuantity').value),
+                unitPrice: parseFloat(document.getElementById('saleUnitPrice').value),
+                total: parseFloat(document.getElementById('saleTotal').value),
+                date: document.getElementById('saleDate').value
+            };
+            
+            // Update product stock
+            const products = dataManager.getData('products');
+            const product = products.find(p => p.id === sale.productId);
+            if (product) {
+                product.stock -= sale.quantity;
+                dataManager.updateItem('products', product.id, product);
+            }
+            
+            dataManager.addItem('sales', sale);
+            showNotification('Vente enregistrée avec succès', 'success');
+            
+            hideModal('saleModal');
+            loadSales();
+        }
+        
+        function deleteSale(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette vente ?')) {
+                dataManager.deleteItem('sales', id);
+                showNotification('Vente supprimée avec succès', 'success');
+                loadSales();
+            }
+        }
+        
+        // Suppliers functions
+        function loadSuppliers() {
+            const suppliers = dataManager.getData('suppliers');
+            const tbody = document.getElementById('suppliersTableBody');
+            tbody.innerHTML = '';
+            
+            suppliers.forEach(supplier => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${supplier.name}</td>
+                    <td>${supplier.email}</td>
+                    <td>${supplier.phone}</td>
+                    <td>${formatCurrency(supplier.debt || 0)}</td>
+                    <td>
+                        <button onclick="editSupplier(${supplier.id})" class="bg-blue-500 text-white px-3 py-1 rounded text-sm mr-2">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteSupplier(${supplier.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function saveSupplier(event) {
+            event.preventDefault();
+            
+            const supplier = {
+                name: document.getElementById('supplierName').value,
+                email: document.getElementById('supplierEmail').value,
+                phone: document.getElementById('supplierPhone').value,
+                address: document.getElementById('supplierAddress').value,
+                debt: parseFloat(document.getElementById('supplierDebt').value) || 0
+            };
+            
+            const id = document.getElementById('supplierId').value;
+            if (id) {
+                dataManager.updateItem('suppliers', parseInt(id), supplier);
+                showNotification('Fournisseur modifié avec succès', 'success');
+            } else {
+                dataManager.addItem('suppliers', supplier);
+                showNotification('Fournisseur ajouté avec succès', 'success');
+            }
+            
+            hideModal('supplierModal');
+            loadSuppliers();
+        }
+        
+        function editSupplier(id) {
+            const suppliers = dataManager.getData('suppliers');
+            const supplier = suppliers.find(s => s.id === id);
+            
+            if (supplier) {
+                document.getElementById('supplierId').value = supplier.id;
+                document.getElementById('supplierName').value = supplier.name;
+                document.getElementById('supplierEmail').value = supplier.email;
+                document.getElementById('supplierPhone').value = supplier.phone;
+                document.getElementById('supplierAddress').value = supplier.address;
+                document.getElementById('supplierDebt').value = supplier.debt || 0;
+                
+                showModal('supplierModal');
+            }
+        }
+        
+        function deleteSupplier(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce fournisseur ?')) {
+                dataManager.deleteItem('suppliers', id);
+                showNotification('Fournisseur supprimé avec succès', 'success');
+                loadSuppliers();
+            }
+        }
+        
+        // Inventory functions
+        function loadInventory() {
+            const products = dataManager.getData('products');
+            const tbody = document.getElementById('inventoryTableBody');
+            tbody.innerHTML = '';
+            
+            let totalStockValue = 0;
+            let totalProducts = 0;
+            let alertsCount = 0;
+            
+            products.forEach(product => {
+                const stockValue = product.stock * product.costPrice;
+                totalStockValue += stockValue;
+                totalProducts += product.stock;
+                
+                if (product.stock <= product.minStock) {
+                    alertsCount++;
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>${product.stock}</td>
+                    <td>${product.minStock}</td>
+                    <td>${formatCurrency(product.costPrice)}</td>
+                    <td>${formatCurrency(stockValue)}</td>
+                    <td>
+                        <button onclick="adjustStock(${product.id})" class="bg-green-500 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('totalStockValue').textContent = formatCurrency(totalStockValue);
+            document.getElementById('totalProducts').textContent = totalProducts;
+            document.getElementById('alertsCount').textContent = alertsCount;
+            
+            // Populate inventory dropdown
+            populateInventoryDropdown();
+        }
+        
+        function populateInventoryDropdown() {
+            const products = dataManager.getData('products');
+            const productSelect = document.getElementById('inventoryProduct');
+            
+            productSelect.innerHTML = '<option value="">Sélectionner un produit</option>';
+            
+            products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = product.name;
+                productSelect.appendChild(option);
+            });
+        }
+        
+        function saveInventoryMovement(event) {
+            event.preventDefault();
+            
+            const productId = parseInt(document.getElementById('inventoryProduct').value);
+            const type = document.getElementById('inventoryType').value;
+            const quantity = parseInt(document.getElementById('inventoryQuantity').value);
+            
+            const products = dataManager.getData('products');
+            const product = products.find(p => p.id === productId);
+            
+            if (product) {
+                if (type === 'in') {
+                    product.stock += quantity;
+                } else {
+                    product.stock -= quantity;
+                }
+                
+                dataManager.updateItem('products', productId, product);
+                showNotification('Mouvement de stock enregistré avec succès', 'success');
+            }
+            
+            hideModal('inventoryModal');
+            loadInventory();
+        }
+        
+        function adjustStock(id) {
+            const products = dataManager.getData('products');
+            const product = products.find(p => p.id === id);
+            
+            if (product) {
+                document.getElementById('inventoryProduct').value = product.id;
+                document.getElementById('inventoryDate').value = new Date().toISOString().split('T')[0];
+                showModal('inventoryModal');
+            }
+        }
+        
+        // Charges functions
+        function loadCharges() {
+            const charges = dataManager.getData('charges');
+            const tbody = document.getElementById('chargesTableBody');
+            tbody.innerHTML = '';
+            
+            let totalFixed = 0;
+            let totalVariable = 0;
+            
+            charges.forEach(charge => {
+                if (charge.type === 'fixe') {
+                    totalFixed += charge.amount;
+                } else {
+                    totalVariable += charge.amount;
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${charge.description}</td>
+                    <td><span class="badge ${charge.type === 'fixe' ? 'success' : 'warning'}">${charge.type === 'fixe' ? 'Fixe' : 'Variable'}</span></td>
+                    <td>${formatCurrency(charge.amount)}</td>
+                    <td>${charge.date}</td>
+                    <td>
+                        <button onclick="editCharge(${charge.id})" class="bg-blue-500 text-white px-3 py-1 rounded text-sm mr-2">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteCharge(${charge.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('totalFixedCharges').textContent = formatCurrency(totalFixed);
+            document.getElementById('totalVariableCharges').textContent = formatCurrency(totalVariable);
+        }
+        
+        function saveCharge(event) {
+            event.preventDefault();
+            
+            const charge = {
+                description: document.getElementById('chargeDescription').value,
+                type: document.getElementById('chargeType').value,
+                amount: parseFloat(document.getElementById('chargeAmount').value),
+                date: document.getElementById('chargeDate').value,
+                note: document.getElementById('chargeNote').value
+            };
+            
+            const id = document.getElementById('chargeId').value;
+            if (id) {
+                dataManager.updateItem('charges', parseInt(id), charge);
+                showNotification('Charge modifiée avec succès', 'success');
+            } else {
+                dataManager.addItem('charges', charge);
+                showNotification('Charge ajoutée avec succès', 'success');
+            }
+            
+            hideModal('chargeModal');
+            loadCharges();
+        }
+        
+        function editCharge(id) {
+            const charges = dataManager.getData('charges');
+            const charge = charges.find(c => c.id === id);
+            
+            if (charge) {
+                document.getElementById('chargeId').value = charge.id;
+                document.getElementById('chargeDescription').value = charge.description;
+                document.getElementById('chargeType').value = charge.type;
+                document.getElementById('chargeAmount').value = charge.amount;
+                document.getElementById('chargeDate').value = charge.date;
+                document.getElementById('chargeNote').value = charge.note || '';
+                
+                showModal('chargeModal');
+            }
+        }
+        
+        function deleteCharge(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette charge ?')) {
+                dataManager.deleteItem('charges', id);
+                showNotification('Charge supprimée avec succès', 'success');
+                loadCharges();
+            }
+        }
+        
+        // Reports functions
+        function loadReports() {
+            loadReportCharts();
+        }
+        
+        function loadReportCharts() {
+            // Sales analysis chart
+            const salesAnalysisChart = document.getElementById('salesAnalysisChart');
+            if (salesAnalysisChart) {
+                const ctx = salesAnalysisChart.getContext('2d');
+                const sales = dataManager.getData('sales');
+                
+                // Group sales by month
+                const monthlyData = {};
+                sales.forEach(sale => {
+                    const month = sale.date.substring(0, 7); // YYYY-MM
+                    monthlyData[month] = (monthlyData[month] || 0) + sale.total;
+                });
+                
+                const labels = Object.keys(monthlyData).sort();
+                const data = labels.map(month => monthlyData[month]);
+                
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Ventes (DH)',
+                            data: data,
+                            backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                            borderColor: '#667eea',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Profit chart
+            const profitChart = document.getElementById('profitChart');
+            if (profitChart) {
+                const ctx = profitChart.getContext('2d');
+                const sales = dataManager.getData('sales');
+                const products = dataManager.getData('products');
+                
+                // Calculate profit by product
+                const profitData = {};
+                sales.forEach(sale => {
+                    const product = products.find(p => p.id === sale.productId);
+                    if (product) {
+                        const profit = (sale.unitPrice - product.costPrice) * sale.quantity;
+                        profitData[product.name] = (profitData[product.name] || 0) + profit;
+                    }
+                });
+                
+                const labels = Object.keys(profitData);
+                const data = Object.values(profitData);
+                
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                '#667eea',
+                                '#f59e0b',
+                                '#10b981',
+                                '#ef4444',
+                                '#8b5cf6',
+                                '#06b6d4'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Utility functions
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-MA', {
+                style: 'currency',
+                currency: 'MAD',
+                minimumFractionDigits: 0
+            }).format(amount).replace('MAD', 'DH');
+        }
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('show');
+            
+            // Set today's date for date inputs
+            const dateInputs = modal.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                if (!input.value) {
+                    input.value = new Date().toISOString().split('T')[0];
+                }
+            });
+        }
+        
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('show');
+            
+            // Reset form
+            const form = modal.querySelector('form');
+            if (form) {
+                form.reset();
+            }
+        }
+        
+        function exportData() {
+            const data = {
+                users: dataManager.getData('users'),
+                products: dataManager.getData('products'),
+                clients: dataManager.getData('clients'),
+                suppliers: dataManager.getData('suppliers'),
+                sales: dataManager.getData('sales'),
+                charges: dataManager.getData('charges'),
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'gestion-commerciale-export.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('Données exportées avec succès', 'success');
+        }
+        
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            
+                            // Validate and import data
+                            if (data.products) dataManager.saveData('products', data.products);
+                            if (data.clients) dataManager.saveData('clients', data.clients);
+                            if (data.suppliers) dataManager.saveData('suppliers', data.suppliers);
+                            if (data.sales) dataManager.saveData('sales', data.sales);
+                            if (data.charges) dataManager.saveData('charges', data.charges);
+                            if (data.users) dataManager.saveData('users', data.users);
+                            
+                            showNotification('Données importées avec succès', 'success');
+                            
+                            // Reload current section
+                            if (typeof window['load' + currentSection.charAt(0).toUpperCase() + currentSection.slice(1)] === 'function') {
+                                window['load' + currentSection.charAt(0).toUpperCase() + currentSection.slice(1)]();
+                            }
+                        } catch (error) {
+                            showNotification('Erreur lors de l\'importation des données', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+        
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date for date inputs
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('saleDate').value = today;
+            document.getElementById('inventoryDate').value = today;
+            document.getElementById('chargeDate').value = today;
+            
+            // Initialize data manager
+            dataManager.initializeData();
+            
+            // Show login screen
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        });
+        
+        // Handle Enter key in login form
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                const loginScreen = document.getElementById('loginScreen');
+                if (!loginScreen.classList.contains('hidden')) {
+                    if (!document.getElementById('loginForm').classList.contains('hidden')) {
+                        login();
+                    } else if (!document.getElementById('validateCodeForm').classList.contains('hidden')) {
+                        validateAccount();
+                    }
+                }
+            }
+        });
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"9601963e2fa0189a","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDoVsHyK75t5nJjyLlEbjyoWRN1xTWdb0sQTtgpKAF3sTtthOrpo0%2B4aZ1Fhw7SqjzS1COcJKzJoXGrFzGnowCK0mZqfXzPjTQOPaH0l2XCbN0D6nEKPo5wtYmOKdG6VkR%2BpeeYqPlqQQxXbaLqMeoUS8sFTj6fu3OI27OPEerOQm27L9fNA0wpA95f3D6NW2W7a5nnLiUOBCVm5WsFulaPbnlIw%2BbgIFJT34dnCB9JTEQhqtC05Kh6jrvhFUiQ2Wei61fp5fI%2BYkUAiIiDevTL1gFttywnGm%2FE7kPT93bW9x6EDypNNcpOOJ75fvakkQzytXLohxfg%2BiwjQFS%2Boxd4qxm%2BFO4EX%2FwWPqDEFDKZRYCGL%2BhbXf1KQeQPvZ8hIjbke%2FW%2F1oedKbqAsygZ562QlYw%2B%2Fi1SuJbpVW%2FlsdJOLdAEibpTVXSTuE%2F3F2%2Ft9b4VXlO1peq34MAKQ0h10V4I83J%2BZOHSeSBRuZZRpOolpsJbfLte6U4kBQI%2Bd%2FuIzubjaQGhH%2Fywyozv971YvpBzw%3D";
+        window.__genspark_locale = "fr-FR";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDoVsHyK75t5nJjyLlEbjyoWRN1xTWdb0sQTtgpKAF3sTtthOrpo0+4aZ1Fhw7SqjzS1COcJKzJoXGrFzGnowCK0mZqfXzPjTQOPaH0l2XCbN0D6nEKPo5wtYmOKdG6VkR+peeYqPlqQQxXbaLqMeoUS8sFTj6fu3OI27OPEerOQm27L9fNA0wpA95f3D6NW2W7a5nnLiUOBCVm5WsFulaPbnlIw+bgIFJT34dnCB9JTEQhqtC05Kh6jrvhFUiQ2Wei61fp5fI+YkUAiIiDevTL1gFttywnGm/E7kPT93bW9x6EDypNNcpOOJ75fvakkQzytXLohxfg+iwjQFS+oxd4qxm+FO4EX/wWPqDEFDKZRYCGL+hbXf1KQeQPvZ8hIjbke/W/1oedKbqAsygZ562QlYw+/i1SuJbpVW/lsdJOLdAEibpTVXSTuE/3F2/t9b4VXlO1peq34MAKQ0h10V4I83J+ZOHSeSBRuZZRpOolpsJbfLte6U4kBQI+d/uIzubjaQGhH/ywyozv971YvpBzw=";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
